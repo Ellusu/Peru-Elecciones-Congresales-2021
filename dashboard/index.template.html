@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elecciones Perú 2021 — Análisis</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
+  <style>
+    :root { --bg:#0f1419; --panel:#1a2332; --text:#e7ecf3; --muted:#8b9cb3; --accent:#3b82f6; --border:#2d3a4d; --warn:#f59e0b; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+    header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); background:var(--panel); }
+    header h1 { margin:0 0 .25rem; font-size:1.25rem; }
+    header p { margin:0; font-size:.85rem; color:var(--muted); }
+    header a { color:var(--accent); }
+    .layout { display:flex; min-height:calc(100vh - 4.5rem); align-items:stretch; }
+    .sidebar {
+      width:240px; flex-shrink:0; background:#121a24; border-right:1px solid var(--border);
+      padding:.75rem 0; position:sticky; top:0; align-self:flex-start; max-height:100vh; overflow-y:auto;
+    }
+    .sidebar h3 {
+      margin:0 1rem .5rem; font-size:.65rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600;
+    }
+    .sidebar nav { display:flex; flex-direction:column; gap:0; padding:0; background:transparent; border:0; position:static; }
+    .sidebar button {
+      display:block; width:100%; text-align:left; padding:.45rem 1rem; margin:0;
+      background:transparent; border:0; border-left:3px solid transparent;
+      color:var(--muted); font-size:.8rem; font-family:inherit; cursor:pointer;
+    }
+    .sidebar button:hover { color:var(--text); background:rgba(255,255,255,.04); }
+    .sidebar button.active { color:var(--text); border-left-color:var(--accent); background:rgba(59,130,246,.08); }
+    .main-area { flex:1; min-width:0; padding:1rem 1.25rem 2.5rem; max-width:none; margin:0; }
+    .banner-demo {
+      background:rgba(245,158,11,.12); border:1px solid var(--warn); color:#fcd34d;
+      padding:.65rem 1rem; margin:0 1.25rem .75rem; border-radius:8px; font-size:.85rem;
+    }
+    .page { display:none; animation:fade .15s ease; }
+    .page.active { display:block; }
+    @keyframes fade { from { opacity:.85; } to { opacity:1; } }
+    .page-head {
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
+      margin:0 0 .75rem; border-bottom:1px solid var(--border); padding-bottom:.35rem;
+    }
+    .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+    .card {
+      background:var(--panel); border:1px solid var(--border); border-radius:10px;
+      padding:.65rem .85rem .85rem;
+    }
+    .card h3 { margin:0 0 .4rem; font-size:.8rem; color:var(--muted); font-weight:600; }
+    .chart { width:100%; height:min(72vh, 560px); min-height:280px; }
+    .chart.tall { height:min(78vh, 620px); min-height:320px; }
+    .chart.wide { height:min(74vh, 580px); min-height:300px; }
+    .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.65rem; margin-bottom:1rem; }
+    .kpi { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:.85rem; }
+    .kpi span { display:block; font-size:.65rem; color:var(--muted); text-transform:uppercase; }
+    .kpi strong { font-size:1.15rem; font-variant-numeric:tabular-nums; }
+    .note { font-size:.8rem; color:var(--muted); margin-top:1rem; padding:.75rem 1rem; background:rgba(59,130,246,.06); border-radius:8px; border:1px solid var(--border); }
+    table.data { width:100%; border-collapse:collapse; font-size:.75rem; }
+    table.data th, table.data td { padding:.4rem .5rem; text-align:left; border-bottom:1px solid var(--border); }
+    table.data th { color:var(--muted); cursor:pointer; user-select:none; }
+    table.data th:hover { color:var(--accent); }
+    table.data tr:hover td { background:rgba(255,255,255,.03); }
+    .err { color:#f87171; padding:2rem; text-align:center; }
+    .mini { font-size:.7rem; color:var(--muted); margin-top:.35rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Elecciones generales Perú 2021</h1>
+    <p>Fuente: <a href="https://www.datosabiertos.gob.pe/" target="_blank" rel="noopener">datosabiertos.gob.pe</a> · Apache ECharts + echarts-gl</p>
+  </header>
+  <div class="layout">
+    <aside class="sidebar" id="sidebarNav" aria-label="Navegación">
+      <h3>Resumen</h3>
+      <nav>
+        <button type="button" data-page="page-resumen">Indicadores nacionales</button>
+        <button type="button" data-page="page-pie-emitidos">Composición emitidos (1ª v.)</button>
+        <button type="button" data-page="page-pie-cruzado">Voto cruzado (distrito)</button>
+      </nav>
+      <h3>Presidencial</h3>
+      <nav>
+        <button type="button" data-page="page-bar-p1c">1ª vuelta — candidatos</button>
+        <button type="button" data-page="page-bar-p2c">2ª vuelta — candidatos</button>
+      </nav>
+      <h3>Congreso</h3>
+      <nav>
+        <button type="button" data-page="page-treemap-cong">Votos por lista (treemap)</button>
+      </nav>
+      <h3>Izq. / Der.</h3>
+      <nav>
+        <button type="button" data-page="page-bar-bloq-p1">Bloques 1ª vuelta</button>
+        <button type="button" data-page="page-bar-bloq-cong">Bloques Congreso</button>
+        <button type="button" data-page="page-map-bal">Mapa balance (1ª v.)</button>
+        <button type="button" data-page="page-map-cas">Mapa % Castillo (2ª v.)</button>
+      </nav>
+      <h3>Territorio</h3>
+      <nav>
+        <button type="button" data-page="page-bar-prov">Provincias (electores)</button>
+        <button type="button" data-page="page-bar-dist-hi">Distritos — alta part.</button>
+        <button type="button" data-page="page-bar-dist-lo">Distritos — baja part.</button>
+        <button type="button" data-page="page-bar-part">Part. por departamento</button>
+        <button type="button" data-page="page-line-compare">1ª vs 2ª vuelta (líneas)</button>
+      </nav>
+      <h3>Análisis</h3>
+      <nav>
+        <button type="button" data-page="page-scatter-dept">Scatter 1ª vs 2ª part.</button>
+        <button type="button" data-page="page-bar-delta">Δ participación (barras)</button>
+        <button type="button" data-page="page-map-swing">Mapa swing (2ª vs 1ª)</button>
+        <button type="button" data-page="page-scatter-turnout-margin">Turnout vs margen 2ª</button>
+        <button type="button" data-page="page-map-competitividad">Mapa competitividad 2ª</button>
+        <button type="button" data-page="page-gl-line3d">Línea 3D (echarts-gl)</button>
+      </nav>
+      <h3>Datos</h3>
+      <nav>
+        <button type="button" data-page="page-tabla">Tabla departamentos</button>
+      </nav>
+    </aside>
+    <!-- JSON embebido: en la plantilla hay datos demo válidos; el build los sustituye por datos reales -->
+    <script type="application/json" id="bundle">{"demo":true,"geo_peru":null,"nacional_bloques_pres1":{},"nacional_bloques_congreso":{},"mapa_pres1_balance_izq_der":[],"mapa_pres2_pct_castillo":[],"fuente":"https://www.datosabiertos.gob.pe/","resumen":{"nacional":{"presidencial_1v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0},"presidencial_2v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0}}},"voto_cruzado_distrito":{"distritos_total":0,"misma_bancada_1v_congreso":0,"distinto":0,"pct_misma_bancada":0},"departamentos":[],"pres1_candidatos_nacional":[],"pres2_candidatos_nacional":[],"congreso_partidos_nacional":[],"provincias_mayor_electores":[],"distritos_alta_participacion_1v":[],"distritos_baja_participacion_1v":[]}</script>
+    <main class="main-area" id="app"></main>
+  </div>
+
+  <script>
+(function () {
+  const EXTRANJERO = new Set(["AFRICA", "AMERICA", "ASIA", "EUROPA", "OCEANIA"]);
+  function filtraPeru(deps) {
+    return (deps || []).filter(function (d) { return !EXTRANJERO.has(d.departamento); });
+  }
+  function ec(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    return echarts.init(el);
+  }
+  function render(data) {
+    var app = document.getElementById("app");
+    var demo = data.demo === true;
+    var n1 = (data.resumen && data.resumen.nacional && data.resumen.nacional.presidencial_1v) || {};
+    var n2 = (data.resumen && data.resumen.nacional && data.resumen.nacional.presidencial_2v) || {};
+    var vc = data.voto_cruzado_distrito || {};
+    var deps = filtraPeru(data.departamentos);
+    var depNames = deps.map(function (d) { return d.departamento; });
+    var p1 = deps.map(function (d) { return d.pres1.pct_participacion; });
+    var p2 = deps.map(function (d) { return d.pres2.pct_participacion; });
+    var deltas = deps.map(function (d) { return d.delta_participacion_2v_menos_1v != null ? d.delta_participacion_2v_menos_1v : (d.pres2.pct_participacion - d.pres1.pct_participacion); });
+    var p1c = data.pres1_candidatos_nacional || [];
+    var p2c = data.pres2_candidatos_nacional || [];
+    var cng = data.congreso_partidos_nacional || [];
+    var provs = data.provincias_mayor_electores || [];
+    var dhi = data.distritos_alta_participacion_1v || [];
+    var dlo = data.distritos_baja_participacion_1v || [];
+    var bl1Dep = data.departamentos_bloques_pres1 || [];
+    var casDep = data.departamentos_castillo_2v || [];
+    var byDepLeft = {};
+    bl1Dep.forEach(function (r) {
+      byDepLeft[String(r.DEPARTAMENTO || "").toUpperCase()] = Number(r.pct_izquierda || 0);
+    });
+    var byDepCastillo = {};
+    casDep.forEach(function (r) {
+      byDepCastillo[String(r.DEPARTAMENTO || "").toUpperCase()] = Number(r.pct_castillo || 0);
+    });
+    var swingMapRows = deps.map(function (d) {
+      var k = String(d.departamento || "").toUpperCase();
+      var swing = (byDepCastillo[k] != null ? byDepCastillo[k] : 0) - (byDepLeft[k] != null ? byDepLeft[k] : 0);
+      return { name: d.departamento, value: Number(swing.toFixed(2)) };
+    });
+    var competitivitaRows = deps.map(function (d) {
+      var m = Number(d.pres2 && d.pres2.margen_pct != null ? d.pres2.margen_pct : 0);
+      return { name: d.departamento, value: Number(m.toFixed(2)) };
+    });
+
+    function n(x, dec) { if (x == null || isNaN(x)) return "—"; return Number(x).toFixed(dec != null ? dec : 2); }
+
+    var espectroTxt = (data.espectro_nota || "Ver dati/espectro_politico_2021.json");
+    app.innerHTML =
+      (demo ? '<p class="banner-demo"><strong>Vista previa / plantilla.</strong> Ejecuta <code>python scripts/build_elecciones_db.py</code> para generar <code>index.html</code> con datos reales (esta plantilla sí se puede abrir en el navegador).</p>' : "") +
+      '<div class="page active" id="page-resumen"><h2 class="page-head">Indicadores nacionales</h2><div class="kpis">' +
+      '<div class="kpi"><span>Participación 1ª vuelta</span><strong>' + n(n1.pct_participacion) + "%</strong></div>" +
+      '<div class="kpi"><span>Participación 2ª vuelta</span><strong>' + n(n2.pct_participacion) + "%</strong></div>" +
+      '<div class="kpi"><span>Válidos / emitidos (1ª v.)</span><strong>' + n(n1.pct_votos_validos_sobre_emitidos) + "%</strong></div>" +
+      '<div class="kpi"><span>Válidos / emitidos (2ª v.)</span><strong>' + n(n2.pct_votos_validos_sobre_emitidos) + "%</strong></div>" +
+      '<div class="kpi"><span>Alineación distrito presid. / congreso</span><strong>' + n(vc.pct_misma_bancada, 2) + "%</strong></div>" +
+      '</div></div>' +
+
+      '<div class="page" id="page-pie-emitidos"><h2 class="page-head">Composición emitidos (1ª vuelta)</h2><div class="card"><h3>Válidos, blancos, nulos, impugnados</h3><div class="chart" id="pie-nacional"></div></div></div>' +
+      '<div class="page" id="page-pie-cruzado"><h2 class="page-head">Voto cruzado (distrito)</h2><div class="card"><h3>Misma bancada vs distinto (presid. 1ª / congreso)</h3><div class="chart" id="pie-cruzado"></div></div></div>' +
+
+      '<div class="page" id="page-bar-p1c"><h2 class="page-head">Presidencial — 1ª vuelta</h2><div class="card"><h3>Todos los candidatos (votos nacionales)</h3><div class="chart tall" id="bar-p1c"></div></div></div>' +
+      '<div class="page" id="page-bar-p2c"><h2 class="page-head">Presidencial — 2ª vuelta</h2><div class="card"><h3>Dos candidatos (votos nacionales)</h3><div class="chart" id="bar-p2c"></div></div></div>' +
+
+      '<div class="page" id="page-treemap-cong"><h2 class="page-head">Congreso — votos por lista</h2><div class="card"><h3>Principales fuerzas (votos válidos agregados)</h3><div class="chart wide" id="treemap-cong"></div>' +
+      '<p class="mini">Suma de votos por partido en todas las mesas; proporcional no implica escaños (D\'Hondt por circunscripción).</p></div></div>' +
+
+      '<div class="page" id="page-bar-bloq-p1"><h2 class="page-head">Izq. / centro / der. — 1ª vuelta presidencial</h2>' +
+      '<p class="mini" style="margin:0 0 .75rem">' + espectroTxt + "</p>" +
+      '<div class="card"><h3>% sobre votos válidos</h3><div class="chart" id="bar-bloq-p1"></div></div></div>' +
+      '<div class="page" id="page-bar-bloq-cong"><h2 class="page-head">Izq. / centro / der. — Congreso</h2><div class="card"><h3>% sobre votos válidos (lista)</h3><div class="chart" id="bar-bloq-cong"></div></div></div>' +
+      '<div class="page" id="page-map-bal"><h2 class="page-head">Mapa — balance (izq. − der.) 1ª vuelta</h2><div class="card"><h3>Por departamento</h3><div class="chart tall" id="map-bal"></div><p class="mini">GeoJSON: INEI/juaneladio/peru-geojson. Rojo = más derecha, azul = más izquierda.</p></div></div>' +
+      '<div class="page" id="page-map-cas"><h2 class="page-head">Mapa — % Castillo (2ª vuelta)</h2><div class="card"><h3>Sobre P1+P2</h3><div class="chart tall" id="map-cas"></div></div></div>' +
+
+      '<div class="page" id="page-bar-prov"><h2 class="page-head">Provincias con más electores</h2><div class="card"><h3>1ª vuelta</h3><div class="chart tall" id="bar-prov"></div></div></div>' +
+      '<div class="page" id="page-bar-dist-hi"><h2 class="page-head">Distritos — mayor participación (1ª v.)</h2><div class="card"><h3>Ranking</h3><div class="chart" id="bar-dist-hi"></div></div></div>' +
+      '<div class="page" id="page-bar-dist-lo"><h2 class="page-head">Distritos — menor participación (1ª v.)</h2><div class="card"><h3>≥50 electores</h3><div class="chart" id="bar-dist-lo"></div></div></div>' +
+      '<div class="page" id="page-bar-part"><h2 class="page-head">Participación por departamento</h2><div class="card"><h3>Perú (barras 1ª / 2ª)</h3><div class="chart tall" id="bar-part"></div></div></div>' +
+      '<div class="page" id="page-line-compare"><h2 class="page-head">1ª vs 2ª vuelta por departamento</h2><div class="card"><h3>Líneas</h3><div class="chart tall" id="line-compare"></div></div></div>' +
+
+      '<div class="page" id="page-scatter-dept"><h2 class="page-head">Participación 1ª vs 2ª vuelta</h2><div class="card"><h3>Cada punto = departamento</h3><div class="chart" id="scatter-dept"></div></div></div>' +
+      '<div class="page" id="page-bar-delta"><h2 class="page-head">Cambio participación (2ª − 1ª)</h2><div class="card"><h3>Por departamento</h3><div class="chart tall" id="bar-delta"></div></div></div>' +
+      '<div class="page" id="page-map-swing"><h2 class="page-head">Mapa swing (2ª vs 1ª)</h2><div class="card"><h3>%Castillo 2ª − %Izquierda 1ª (pp)</h3><div class="chart tall" id="map-swing"></div><p class="mini">Aprox. de trasvase territorial hacia Castillo desde el espacio de izquierda de 1ª vuelta.</p></div></div>' +
+      '<div class="page" id="page-scatter-turnout-margin"><h2 class="page-head">Turnout effect</h2><div class="card"><h3>Δ participación (2ª−1ª) vs margen del ganador (2ª)</h3><div class="chart" id="scatter-turnout-margin"></div></div></div>' +
+      '<div class="page" id="page-map-competitividad"><h2 class="page-head">Mapa competitividad (2ª vuelta)</h2><div class="card"><h3>Margen del ganador por departamento (pp)</h3><div class="chart tall" id="map-competitividad"></div><p class="mini">Más bajo = elección más competida.</p></div></div>' +
+      '<div class="page" id="page-gl-line3d"><h2 class="page-head">Línea 3D (echarts-gl)</h2><div class="card"><h3>Índice departamento → % part. 1ª → % part. 2ª</h3><div class="chart tall" id="gl-line3d"></div></div></div>' +
+
+      '<div class="page" id="page-tabla"><h2 class="page-head">Tabla — departamentos (Perú)</h2>' +
+      '<div class="card"><table class="data" id="tbl-dept"><thead><tr>' +
+      "<th data-k=\"dep\">Departamento</th><th data-k=\"p1\">Part. 1ª v %</th><th data-k=\"p2\">Part. 2ª v %</th><th data-k=\"d\">Δ part. (pp)</th>" +
+      "<th data-k=\"g1\">Ganador 1ª v</th><th data-k=\"g2\">Ganador 2ª v</th></tr></thead><tbody id=\"tbl-body\"></tbody></table></div></div>" +
+
+      '<p class="note"><strong>Método:</strong> solo mesas <code>CONTABILIZADA</code>. Voto cruzado = comparación ecológica por distrito. "index.html" generado incluye todos los datos embebidos; esta plantilla incluye JSON demo para previsualizar el layout.</p>';
+
+    var nb1 = data.nacional_bloques_pres1 || {};
+    var nbc = data.nacional_bloques_congreso || {};
+    var geojson = data.geo_peru;
+    var mapBal = data.mapa_pres1_balance_izq_der || [];
+    var mapCas = data.mapa_pres2_pct_castillo || [];
+    var geoRegistered = false;
+    function ensurePeruMap() {
+      if (geoRegistered) return;
+      if (geojson && geojson.features && geojson.features.length && typeof echarts.registerMap === "function") {
+        echarts.registerMap("peru_dep", geojson);
+        geoRegistered = true;
+      }
+    }
+
+    var chartOnce = {};
+    function onceChart(key, fn) {
+      if (chartOnce[key]) return;
+      chartOnce[key] = true;
+      fn();
+    }
+
+    function initPieNacional() {
+      onceChart("pie-nacional", function () {
+        var pieN = ec("pie-nacional");
+        if (pieN) pieN.setOption({
+          tooltip: { trigger: "item" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          series: [{ type: "pie", radius: ["42%", "68%"], label: { color: "#e7ecf3" },
+            data: [
+              { name: "Válidos", value: +n1.pct_votos_validos_sobre_emitidos || 0 },
+              { name: "Blancos", value: +n1.pct_votos_blancos_sobre_emitidos || 0 },
+              { name: "Nulos", value: +n1.pct_votos_nulos_sobre_emitidos || 0 },
+              { name: "Impugnados", value: +n1.pct_votos_impugnados_sobre_emitidos || 0 },
+            ],
+          }],
+        });
+      });
+    }
+    function initPieCruzado() {
+      onceChart("pie-cruzado", function () {
+        var pieC = ec("pie-cruzado");
+        if (pieC) pieC.setOption({
+          tooltip: { trigger: "item" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          series: [{ type: "pie", radius: "68%", label: { color: "#e7ecf3" },
+            data: [
+              { name: "Misma bancada", value: vc.misma_bancada_1v_congreso || 0 },
+              { name: "Distinto", value: vc.distinto || 0 },
+            ],
+          }],
+        });
+      });
+    }
+    function initBarP1c() {
+      onceChart("bar-p1c", function () {
+        var b1 = ec("bar-p1c");
+        if (b1 && p1c.length) b1.setOption({
+          tooltip: { trigger: "axis" },
+          grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
+          xAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "category", data: p1c.map(function (r) { return (r.etiqueta || "").slice(0, 42); }).reverse(), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+          series: [{ type: "bar", data: p1c.map(function (r) { return r.votos; }).reverse(), itemStyle: { color: "#3b82f6" } }],
+        });
+      });
+    }
+    function initBarP2c() {
+      onceChart("bar-p2c", function () {
+        var b2 = ec("bar-p2c");
+        if (b2 && p2c.length) b2.setOption({
+          tooltip: { trigger: "axis" },
+          xAxis: { type: "category", data: p2c.map(function (r) { return (r.etiqueta || "").split(" — ")[0]; }), axisLabel: { color: "#8b9cb3" } },
+          yAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          series: [{ type: "bar", data: p2c.map(function (r) { return r.votos; }), itemStyle: { color: "#22c55e" } }],
+        });
+      });
+    }
+    function initTreemapCong() {
+      onceChart("treemap-cong", function () {
+        var tm = ec("treemap-cong");
+        if (tm && cng.length) tm.setOption({
+          tooltip: { formatter: function (p) { return p.name + ": " + (p.value || 0).toLocaleString(); } },
+          series: [{
+            type: "treemap",
+            roam: false,
+            breadcrumb: { show: false },
+            label: { show: true, fontSize: 10, color: "#e7ecf3" },
+            data: cng.slice(0, 18).map(function (r) {
+              var name = (r.DESCRIPCION_OP || r.descripcion_op || "").slice(0, 40);
+              return { name: name, value: r.votos };
+            }),
+          }],
+        });
+      });
+    }
+    function initBarBloqP1() {
+      onceChart("bar-bloq-p1", function () {
+        var bbloq1 = ec("bar-bloq-p1");
+        if (bbloq1 && nb1.izquierda != null) bbloq1.setOption({
+          tooltip: { trigger: "axis" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          grid: { left: "3%", right: "4%", bottom: "14%", top: "8%", containLabel: true },
+          xAxis: { type: "value", max: 100, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "category", data: ["Presidencial 1ª vuelta"], axisLabel: { color: "#8b9cb3" } },
+          series: [
+            { name: "Izquierda", type: "bar", stack: "bloq", data: [nb1.izquierda], itemStyle: { color: "#2563eb" } },
+            { name: "Centro", type: "bar", stack: "bloq", data: [nb1.centro], itemStyle: { color: "#64748b" } },
+            { name: "Derecha", type: "bar", stack: "bloq", data: [nb1.derecha], itemStyle: { color: "#dc2626" } },
+          ],
+        });
+      });
+    }
+    function initBarBloqCong() {
+      onceChart("bar-bloq-cong", function () {
+        var bbloqc = ec("bar-bloq-cong");
+        if (bbloqc && nbc.izquierda != null) bbloqc.setOption({
+          tooltip: { trigger: "axis" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          grid: { left: "3%", right: "4%", bottom: "14%", top: "8%", containLabel: true },
+          xAxis: { type: "value", max: 100, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "category", data: ["Congreso (listas)"], axisLabel: { color: "#8b9cb3" } },
+          series: [
+            { name: "Izquierda", type: "bar", stack: "bloq2", data: [nbc.izquierda], itemStyle: { color: "#2563eb" } },
+            { name: "Centro", type: "bar", stack: "bloq2", data: [nbc.centro], itemStyle: { color: "#64748b" } },
+            { name: "Derecha", type: "bar", stack: "bloq2", data: [nbc.derecha], itemStyle: { color: "#dc2626" } },
+          ],
+        });
+      });
+    }
+    function initMapBal() {
+      onceChart("map-bal", function () {
+        ensurePeruMap();
+        var map1 = ec("map-bal");
+        if (map1 && mapBal.length) map1.setOption({
+          tooltip: { trigger: "item", formatter: "{b}<br/>Balance (izq−der): {c} pp" },
+          visualMap: {
+            min: -70, max: 70, calculable: true,
+            inRange: { color: ["#1d4ed8", "#f1f5f9", "#b91c1c"] },
+            textStyle: { color: "#8b9cb3" },
+          },
+          series: [{
+            type: "map",
+            map: "peru_dep",
+            nameProperty: "NOMBDEP",
+            roam: true,
+            label: { show: false },
+            emphasis: { label: { show: true, color: "#fff", fontSize: 10 } },
+            itemStyle: { borderColor: "#1a2332", borderWidth: 0.5 },
+            data: mapBal,
+          }],
+        });
+      });
+    }
+    function initMapCas() {
+      onceChart("map-cas", function () {
+        ensurePeruMap();
+        var map2 = ec("map-cas");
+        if (map2 && mapCas.length) map2.setOption({
+          tooltip: { trigger: "item", formatter: "{b}<br/>Castillo: {c}%" },
+          visualMap: {
+            min: 0, max: 100, calculable: true,
+            inRange: { color: ["#172554", "#93c5fd", "#fecaca"] },
+            textStyle: { color: "#8b9cb3" },
+          },
+          series: [{
+            type: "map",
+            map: "peru_dep",
+            nameProperty: "NOMBDEP",
+            roam: true,
+            label: { show: false },
+            emphasis: { label: { show: true, color: "#fff", fontSize: 10 } },
+            itemStyle: { borderColor: "#1a2332", borderWidth: 0.5 },
+            data: mapCas,
+          }],
+        });
+      });
+    }
+    function initBarProv() {
+      onceChart("bar-prov", function () {
+        var bp = ec("bar-prov");
+        if (bp && provs.length) {
+          var plab = provs.map(function (r) { return (r.DEPARTAMENTO || "").slice(0, 8) + " / " + (r.PROVINCIA || "").slice(0, 18); });
+          bp.setOption({
+            tooltip: { trigger: "axis" },
+            grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
+            xAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+            yAxis: { type: "category", data: plab.reverse(), axisLabel: { color: "#8b9cb3", fontSize: 8 } },
+            series: [{ type: "bar", data: provs.map(function (r) { return r.electores_habiles; }).reverse(), itemStyle: { color: "#a855f7" } }],
+          });
+        }
+      });
+    }
+    function initBarDistHi() {
+      onceChart("bar-dist-hi", function () {
+        var bh = ec("bar-dist-hi");
+        if (bh && dhi.length) bh.setOption({
+          tooltip: { trigger: "axis" },
+          grid: { left: "3%", right: "8%", bottom: "3%", top: "2%", containLabel: true },
+          xAxis: { type: "value", max: 100, axisLabel: { color: "#8b9cb3" } },
+          yAxis: { type: "category", data: dhi.map(function (r) { return (r.DISTRITO || "").slice(0, 22); }), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+          series: [{ type: "bar", data: dhi.map(function (r) { return r.pct_participacion; }), itemStyle: { color: "#34d399" } }],
+        });
+      });
+    }
+    function initBarDistLo() {
+      onceChart("bar-dist-lo", function () {
+        var bl = ec("bar-dist-lo");
+        if (bl && dlo.length) bl.setOption({
+          tooltip: { trigger: "axis" },
+          grid: { left: "3%", right: "8%", bottom: "3%", top: "2%", containLabel: true },
+          xAxis: { type: "value", max: 100, axisLabel: { color: "#8b9cb3" } },
+          yAxis: { type: "category", data: dlo.map(function (r) { return (r.DISTRITO || "").slice(0, 22); }), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+          series: [{ type: "bar", data: dlo.map(function (r) { return r.pct_participacion; }), itemStyle: { color: "#f87171" } }],
+        });
+      });
+    }
+    function initBarPart() {
+      onceChart("bar-part", function () {
+        var bar = ec("bar-part");
+        if (bar && depNames.length) bar.setOption({
+          tooltip: { trigger: "axis" },
+          grid: { left: "3%", right: "4%", bottom: "12%", top: "8%", containLabel: true },
+          dataZoom: [{ type: "slider", bottom: 0, height: 8 }],
+          xAxis: { type: "category", data: depNames, axisLabel: { rotate: 45, color: "#8b9cb3", fontSize: 9 } },
+          yAxis: { type: "value", name: "%", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          series: [
+            { name: "1ª v", type: "bar", data: p1, itemStyle: { color: "#3b82f6" } },
+            { name: "2ª v", type: "bar", data: p2, itemStyle: { color: "#22c55e" } },
+          ],
+        });
+      });
+    }
+    function initLineCompare() {
+      onceChart("line-compare", function () {
+        var ln = ec("line-compare");
+        if (ln && depNames.length) ln.setOption({
+          tooltip: { trigger: "axis" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          grid: { left: "3%", right: "4%", bottom: "14%", top: "8%", containLabel: true },
+          dataZoom: [{ type: "slider", bottom: 0, height: 8 }],
+          xAxis: { type: "category", data: depNames, axisLabel: { rotate: 45, color: "#8b9cb3", fontSize: 9 } },
+          yAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          series: [
+            { name: "1ª v", type: "line", smooth: true, data: p1, symbol: "circle", symbolSize: 5 },
+            { name: "2ª v", type: "line", smooth: true, data: p2, symbol: "circle", symbolSize: 5 },
+          ],
+        });
+      });
+    }
+    function initScatterDept() {
+      onceChart("scatter-dept", function () {
+        var sc = ec("scatter-dept");
+        if (sc && depNames.length) sc.setOption({
+          tooltip: { formatter: function (p) { var i = p.data[2]; return deps[i].departamento + "<br/>1ª: " + p.data[0].toFixed(1) + "%<br/>2ª: " + p.data[1].toFixed(1) + "%"; } },
+          xAxis: { type: "value", name: "Part. 1ª v %", min: 0, max: 100, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "value", name: "Part. 2ª v %", min: 0, max: 100, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          series: [{ type: "scatter", symbolSize: 10,
+            data: deps.map(function (d, i) { return [d.pres1.pct_participacion, d.pres2.pct_participacion, i]; }),
+            itemStyle: { color: "#38bdf8" },
+          }],
+        });
+      });
+    }
+    function initBarDelta() {
+      onceChart("bar-delta", function () {
+        var bd = ec("bar-delta");
+        if (bd && depNames.length) {
+          var order = deps.map(function (d, i) {
+            return { i: i, d: d.delta_participacion_2v_menos_1v != null ? d.delta_participacion_2v_menos_1v : (d.pres2.pct_participacion - d.pres1.pct_participacion) };
+          }).sort(function (a, b) { return b.d - a.d; });
+          bd.setOption({
+            tooltip: { trigger: "axis" },
+            grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
+            xAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+            yAxis: { type: "category", data: order.map(function (x) { return depNames[x.i].slice(0, 18); }), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+            series: [{
+              type: "bar",
+              data: order.map(function (x) {
+                return { value: x.d, itemStyle: { color: x.d >= 0 ? "#22c55e" : "#f87171" } };
+              }),
+            }],
+          });
+        }
+      });
+    }
+    function initMapSwing() {
+      onceChart("map-swing", function () {
+        ensurePeruMap();
+        var mapS = ec("map-swing");
+        if (mapS && swingMapRows.length) mapS.setOption({
+          tooltip: { trigger: "item", formatter: "{b}<br/>Swing: {c} pp" },
+          visualMap: {
+            min: -35, max: 35, calculable: true,
+            inRange: { color: ["#dc2626", "#f1f5f9", "#2563eb"] },
+            textStyle: { color: "#8b9cb3" },
+          },
+          series: [{
+            type: "map",
+            map: "peru_dep",
+            nameProperty: "NOMBDEP",
+            roam: true,
+            label: { show: false },
+            emphasis: { label: { show: true, color: "#fff", fontSize: 10 } },
+            itemStyle: { borderColor: "#1a2332", borderWidth: 0.5 },
+            data: swingMapRows,
+          }],
+        });
+      });
+    }
+    function initScatterTurnoutMargin() {
+      onceChart("scatter-turnout-margin", function () {
+        var stm = ec("scatter-turnout-margin");
+        if (stm && depNames.length) stm.setOption({
+          tooltip: {
+            formatter: function (p) {
+              var i = p.data[2];
+              return deps[i].departamento + "<br/>Δ participación: " + p.data[0].toFixed(2) + " pp<br/>Margen ganador 2ª: " + p.data[1].toFixed(2) + " pp";
+            },
+          },
+          xAxis: { type: "value", name: "Δ participación 2ª−1ª (pp)", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "value", name: "Margen ganador 2ª (pp)", min: 0, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          series: [{
+            type: "scatter",
+            symbolSize: 10,
+            data: deps.map(function (d, i) {
+              return [
+                d.delta_participacion_2v_menos_1v != null ? d.delta_participacion_2v_menos_1v : (d.pres2.pct_participacion - d.pres1.pct_participacion),
+                d.pres2.margen_pct != null ? d.pres2.margen_pct : 0,
+                i,
+              ];
+            }),
+            itemStyle: { color: "#f59e0b" },
+          }],
+        });
+      });
+    }
+    function initMapCompetitividad() {
+      onceChart("map-competitividad", function () {
+        ensurePeruMap();
+        var mapC = ec("map-competitividad");
+        if (mapC && competitivitaRows.length) mapC.setOption({
+          tooltip: { trigger: "item", formatter: "{b}<br/>Margen 2ª: {c} pp" },
+          visualMap: {
+            min: 0, max: 35, calculable: true,
+            inRange: { color: ["#10b981", "#f59e0b", "#b91c1c"] },
+            textStyle: { color: "#8b9cb3" },
+          },
+          series: [{
+            type: "map",
+            map: "peru_dep",
+            nameProperty: "NOMBDEP",
+            roam: true,
+            label: { show: false },
+            emphasis: { label: { show: true, color: "#fff", fontSize: 10 } },
+            itemStyle: { borderColor: "#1a2332", borderWidth: 0.5 },
+            data: competitivitaRows,
+          }],
+        });
+      });
+    }
+    function initGlLine3d() {
+      onceChart("gl-line3d", function () {
+        var l3 = ec("gl-line3d");
+        if (l3 && depNames.length) {
+          var line3dPeru = deps.map(function (d, i) { return [i, d.pres1.pct_participacion, d.pres2.pct_participacion]; });
+          l3.setOption({
+            tooltip: {},
+            visualMap: { show: false, dimension: 2, min: 0, max: 100,
+              inRange: { color: ["#313695", "#74add1", "#fee090", "#d73027"] },
+            },
+            xAxis3D: { type: "value", name: "Índice", nameTextStyle: { color: "#8b9cb3" }, axisLabel: { color: "#8b9cb3" } },
+            yAxis3D: { type: "value", name: "Part. 1ª v", min: 0, max: 100, nameTextStyle: { color: "#8b9cb3" }, axisLabel: { color: "#8b9cb3" } },
+            zAxis3D: { type: "value", name: "Part. 2ª v", min: 0, max: 100, nameTextStyle: { color: "#8b9cb3" }, axisLabel: { color: "#8b9cb3" } },
+            grid3D: { viewControl: { projection: "perspective" }, light: { main: { intensity: 1.1 }, ambient: { intensity: 0.45 } } },
+            series: [{ type: "line3D", data: line3dPeru, lineStyle: { width: 3 } }],
+          });
+        }
+      });
+    }
+    function initTabla() {
+      onceChart("tbl-dept", function () {
+        var tbody = document.getElementById("tbl-body");
+        if (tbody && deps.length) {
+          var rows = deps.map(function (d) {
+            var del = d.delta_participacion_2v_menos_1v != null ? d.delta_participacion_2v_menos_1v : (d.pres2.pct_participacion - d.pres1.pct_participacion);
+            return { dep: d.departamento, p1: d.pres1.pct_participacion, p2: d.pres2.pct_participacion, d: del, g1: d.pres1.ganador, g2: d.pres2.ganador };
+          });
+          function paint() {
+            tbody.innerHTML = rows.map(function (r) {
+              return "<tr><td>" + r.dep + "</td><td>" + r.p1.toFixed(2) + "</td><td>" + r.p2.toFixed(2) + "</td><td>" + r.d.toFixed(2) + "</td><td>" + (r.g1 || "").slice(0, 48) + "</td><td>" + (r.g2 || "").slice(0, 48) + "</td></tr>";
+            }).join("");
+          }
+          paint();
+          var sortKey = "dep";
+          var asc = true;
+          document.querySelectorAll("#tbl-dept th[data-k]").forEach(function (th) {
+            th.addEventListener("click", function () {
+              var k = th.getAttribute("data-k");
+              if (sortKey === k) asc = !asc; else { sortKey = k; asc = k === "dep" || k === "g1" || k === "g2"; }
+              rows.sort(function (a, b) {
+                var va = a[k], vb = b[k];
+                if (typeof va === "string") return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+                return asc ? va - vb : vb - va;
+              });
+              paint();
+            });
+          });
+        }
+      });
+    }
+
+    var chartIdsForPage = {
+      "page-resumen": [],
+      "page-pie-emitidos": ["pie-nacional"],
+      "page-pie-cruzado": ["pie-cruzado"],
+      "page-bar-p1c": ["bar-p1c"],
+      "page-bar-p2c": ["bar-p2c"],
+      "page-treemap-cong": ["treemap-cong"],
+      "page-bar-bloq-p1": ["bar-bloq-p1"],
+      "page-bar-bloq-cong": ["bar-bloq-cong"],
+      "page-map-bal": ["map-bal"],
+      "page-map-cas": ["map-cas"],
+      "page-bar-prov": ["bar-prov"],
+      "page-bar-dist-hi": ["bar-dist-hi"],
+      "page-bar-dist-lo": ["bar-dist-lo"],
+      "page-bar-part": ["bar-part"],
+      "page-line-compare": ["line-compare"],
+      "page-scatter-dept": ["scatter-dept"],
+      "page-bar-delta": ["bar-delta"],
+      "page-map-swing": ["map-swing"],
+      "page-scatter-turnout-margin": ["scatter-turnout-margin"],
+      "page-map-competitividad": ["map-competitividad"],
+      "page-gl-line3d": ["gl-line3d"],
+      "page-tabla": [],
+    };
+
+    var pageInitFns = {
+      "page-resumen": function () {},
+      "page-pie-emitidos": initPieNacional,
+      "page-pie-cruzado": initPieCruzado,
+      "page-bar-p1c": initBarP1c,
+      "page-bar-p2c": initBarP2c,
+      "page-treemap-cong": initTreemapCong,
+      "page-bar-bloq-p1": initBarBloqP1,
+      "page-bar-bloq-cong": initBarBloqCong,
+      "page-map-bal": initMapBal,
+      "page-map-cas": initMapCas,
+      "page-bar-prov": initBarProv,
+      "page-bar-dist-hi": initBarDistHi,
+      "page-bar-dist-lo": initBarDistLo,
+      "page-bar-part": initBarPart,
+      "page-line-compare": initLineCompare,
+      "page-scatter-dept": initScatterDept,
+      "page-bar-delta": initBarDelta,
+      "page-map-swing": initMapSwing,
+      "page-scatter-turnout-margin": initScatterTurnoutMargin,
+      "page-map-competitividad": initMapCompetitividad,
+      "page-gl-line3d": initGlLine3d,
+      "page-tabla": initTabla,
+    };
+
+    function resizeChartsForPage(pageId) {
+      var ids = chartIdsForPage[pageId] || [];
+      ids.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && echarts.getInstanceByDom(el)) echarts.getInstanceByDom(el).resize();
+      });
+    }
+
+    function showPage(pageId) {
+      if (!pageInitFns[pageId]) return;
+      document.querySelectorAll("#app .page").forEach(function (p) {
+        p.classList.toggle("active", p.id === pageId);
+      });
+      document.querySelectorAll("#sidebarNav button[data-page]").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-page") === pageId);
+      });
+      pageInitFns[pageId]();
+      requestAnimationFrame(function () { resizeChartsForPage(pageId); });
+      if (history.replaceState) try { history.replaceState(null, "", "#" + pageId); } catch (e) {}
+    }
+
+    document.querySelectorAll("#sidebarNav button[data-page]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        showPage(btn.getAttribute("data-page"));
+      });
+    });
+
+    var hash = (location.hash || "").replace(/^#/, "");
+    if (pageInitFns[hash]) showPage(hash);
+    else showPage("page-resumen");
+
+    window.addEventListener("resize", function () {
+      var active = document.querySelector("#app .page.active");
+      if (active) resizeChartsForPage(active.id);
+    });
+
+    window.addEventListener("hashchange", function () {
+      var h = (location.hash || "").replace(/^#/, "");
+      if (pageInitFns[h]) showPage(h);
+    });
+  }
+
+  try {
+    var raw = document.getElementById("bundle").textContent.trim();
+    var data = JSON.parse(raw);
+    render(data);
+  } catch (e) {
+    document.getElementById("app").innerHTML = '<p class="err">JSON no válido en &lt;script id="bundle"&gt;. ' + String(e) + "</p>";
+  }
+})();
+  </script>
+</body>
+</html>

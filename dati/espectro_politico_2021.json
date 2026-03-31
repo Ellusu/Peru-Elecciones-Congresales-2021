@@ -1,0 +1,49 @@
+{
+  "nota": "Clasificación aproximada para visualización (izquierda / centro / derecha). El espectro político en Perú es debatido; los votos válidos se reparten entre bloques según candidato o lista.",
+  "referencia": "https://www.datosabiertos.gob.pe/",
+  "candidatos_pres1": {
+    "VOTOS_P1": "izquierda",
+    "VOTOS_P2": "izquierda",
+    "VOTOS_P3": "centro",
+    "VOTOS_P4": "derecha",
+    "VOTOS_P5": "derecha",
+    "VOTOS_P6": "centro",
+    "VOTOS_P7": "derecha",
+    "VOTOS_P8": "derecha",
+    "VOTOS_P9": "izquierda",
+    "VOTOS_P10": "derecha",
+    "VOTOS_P11": "derecha",
+    "VOTOS_P12": "izquierda",
+    "VOTOS_P13": "derecha",
+    "VOTOS_P14": "centro",
+    "VOTOS_P15": "centro",
+    "VOTOS_P16": "izquierda",
+    "VOTOS_P17": "centro",
+    "VOTOS_P18": "derecha"
+  },
+  "candidatos_pres2": {
+    "VOTOS_P1": "izquierda",
+    "VOTOS_P2": "derecha"
+  },
+  "partidos_congreso": {
+    "00000001": "centro",
+    "00000002": "derecha",
+    "00000003": "derecha",
+    "00000004": "centro",
+    "00000005": "izquierda",
+    "00000006": "izquierda",
+    "00000007": "derecha",
+    "00000008": "izquierda",
+    "00000010": "centro",
+    "00000011": "centro",
+    "00000012": "izquierda",
+    "00000014": "izquierda",
+    "00000015": "derecha",
+    "00000017": "derecha",
+    "00000018": "derecha",
+    "00000019": "centro",
+    "00000020": "derecha",
+    "00000021": "izquierda",
+    "00000022": "derecha"
+  }
+}

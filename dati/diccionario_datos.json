@@ -1,0 +1,123 @@
+{
+  "eleccion": "Elecciones Generales Perú 2021",
+  "encoding_recomendado": "ISO-8859-1",
+  "notas": [
+    "Mapeo VOTOS_P* de 1ª vuelta verificado contra totales nacionales ONPE (PCM por mesa).",
+    "Los CODIGO_OP siguen el padrón de la cédula congresal EG2021.",
+    "2ª vuelta: VOTOS_P1 = Pedro Castillo (Perú Libre), VOTOS_P2 = Keiko Fujimori (Fuerza Popular)."
+  ],
+  "presidencial_1vuelta": {
+    "columnas": "VOTOS_P1..VOTOS_P18, VOTOS_VB, VOTOS_VN, VOTOS_VI",
+    "candidatos": {
+      "VOTOS_P1": {
+        "nombre": "Ollanta Humala Tasso",
+        "partido": "Partido Nacionalista Peruano",
+        "codigo_op_congreso": "00000012"
+      },
+      "VOTOS_P2": {
+        "nombre": "Marco Arana",
+        "partido": "El Frente Amplio por Justicia, Vida y Libertad",
+        "codigo_op_congreso": "00000005"
+      },
+      "VOTOS_P3": {
+        "nombre": "Julio Guzmán Cáceres",
+        "partido": "Partido Morado",
+        "codigo_op_congreso": "00000011"
+      },
+      "VOTOS_P4": {
+        "nombre": "Rafael Santos Normand",
+        "partido": "Perú Patria Segura",
+        "codigo_op_congreso": "00000017"
+      },
+      "VOTOS_P5": {
+        "nombre": "George Forsyth",
+        "partido": "Victoria Nacional",
+        "codigo_op_congreso": "00000022"
+      },
+      "VOTOS_P6": {
+        "nombre": "Yonhy Lescano Ancieta",
+        "partido": "Acción Popular",
+        "codigo_op_congreso": "00000001"
+      },
+      "VOTOS_P7": {
+        "nombre": "Hernando de Soto Polar",
+        "partido": "Avanza País - Partido de Integración Social",
+        "codigo_op_congreso": "00000003"
+      },
+      "VOTOS_P8": {
+        "nombre": "Daniel Urresti Elías",
+        "partido": "Podemos Perú",
+        "codigo_op_congreso": "00000018"
+      },
+      "VOTOS_P9": {
+        "nombre": "Verónika Mendoza Frisch",
+        "partido": "Juntos por el Perú",
+        "codigo_op_congreso": "00000008"
+      },
+      "VOTOS_P10": {
+        "nombre": "Alberto Beingolea Delgado",
+        "partido": "Partido Popular Cristiano - PPC",
+        "codigo_op_congreso": "00000015"
+      },
+      "VOTOS_P11": {
+        "nombre": "Keiko Fujimori Higuchi",
+        "partido": "Fuerza Popular",
+        "codigo_op_congreso": "00000007"
+      },
+      "VOTOS_P12": {
+        "nombre": "José Vega Antonio",
+        "partido": "Unión por el Perú",
+        "codigo_op_congreso": "00000021"
+      },
+      "VOTOS_P13": {
+        "nombre": "Rafael López Aliaga",
+        "partido": "Renovación Popular",
+        "codigo_op_congreso": "00000020"
+      },
+      "VOTOS_P14": {
+        "nombre": "Ciro Gálvez Herrera",
+        "partido": "Renacimiento Unido Nacional",
+        "codigo_op_congreso": "00000019"
+      },
+      "VOTOS_P15": {
+        "nombre": "Daniel Salaverry Villa",
+        "partido": "Partido Democrático Somos Perú",
+        "codigo_op_congreso": "00000010"
+      },
+      "VOTOS_P16": {
+        "nombre": "Pedro Castillo Terrones",
+        "partido": "Partido Político Nacional Perú Libre",
+        "codigo_op_congreso": "00000014"
+      },
+      "VOTOS_P17": {
+        "nombre": "Andrés Alcántara Paredes",
+        "partido": "Democracia Directa",
+        "codigo_op_congreso": "00000004"
+      },
+      "VOTOS_P18": {
+        "nombre": "César Acuña Peralta",
+        "partido": "Alianza para el Progreso",
+        "codigo_op_congreso": "00000002"
+      }
+    }
+  },
+  "presidencial_2vuelta": {
+    "columnas": "VOTOS_P1, VOTOS_P2, VOTOS_VB, VOTOS_VN, VOTOS_VI",
+    "candidatos": {
+      "VOTOS_P1": {
+        "nombre": "Pedro Castillo Terrones",
+        "partido": "Partido Político Nacional Perú Libre",
+        "codigo_op_congreso": "00000014"
+      },
+      "VOTOS_P2": {
+        "nombre": "Keiko Fujimori Higuchi",
+        "partido": "Fuerza Popular",
+        "codigo_op_congreso": "00000007"
+      }
+    }
+  },
+  "congresal": {
+    "columnas_votos_lista": "N_VOTOS_1..N_VOTOS_34",
+    "nota": "Cada fila es un partido (CODIGO_OP) en la mesa; el voto del partido es la suma de N_VOTOS_1..N_VOTOS_34. Filas especiales: CODIGO_OP 80/81/82 (blanco, nulo, impugnado)."
+  }
+}
