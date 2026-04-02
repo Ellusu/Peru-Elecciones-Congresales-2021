@@ -180,7 +180,7 @@
       '<div class="kpi"><span>Válidos / emitidos (1ª v.)</span><strong>' + n(n1.pct_votos_validos_sobre_emitidos) + "%</strong></div>" +
       '<div class="kpi"><span>Válidos / emitidos (2ª v.)</span><strong>' + n(n2.pct_votos_validos_sobre_emitidos) + "%</strong></div>" +
       '<div class="kpi"><span>Alineación distrito presid. / congreso</span><strong>' + n(vc.pct_misma_bancada, 2) + "%</strong></div>" +
-      '</div></div>' +
+      '</div><div class="card"><h3>Resumen rápido 1ª vs 2ª vuelta</h3><div class="chart" id="bar-resumen-nacional"></div></div></div>' +
 
       '<div class="page" id="page-pie-emitidos"><h2 class="page-head">Composición emitidos (1ª vuelta)</h2><div class="card"><h3>Válidos, blancos, nulos, impugnados</h3><div class="chart" id="pie-nacional"></div></div></div>' +
       '<div class="page" id="page-pie-cruzado"><h2 class="page-head">Voto cruzado (distrito)</h2><div class="card"><h3>Misma bancada vs distinto (presid. 1ª / congreso)</h3><div class="chart" id="pie-cruzado"></div></div></div>' +
@@ -253,6 +253,23 @@
               { name: "Impugnados", value: +n1.pct_votos_impugnados_sobre_emitidos || 0 },
             ],
           }],
+        });
+      });
+    }
+    function initBarResumenNacional() {
+      onceChart("bar-resumen-nacional", function () {
+        var brn = ec("bar-resumen-nacional");
+        if (!brn) return;
+        brn.setOption({
+          tooltip: { trigger: "axis" },
+          legend: { bottom: 0, textStyle: { color: "#8b9cb3" } },
+          grid: { left: "3%", right: "4%", bottom: "14%", top: "8%", containLabel: true },
+          xAxis: { type: "value", max: 100, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+          yAxis: { type: "category", data: ["Participación", "Válidos / emitidos"], axisLabel: { color: "#8b9cb3" } },
+          series: [
+            { name: "1ª vuelta", type: "bar", data: [Number(n1.pct_participacion || 0), Number(n1.pct_votos_validos_sobre_emitidos || 0)], itemStyle: { color: "#3b82f6" } },
+            { name: "2ª vuelta", type: "bar", data: [Number(n2.pct_participacion || 0), Number(n2.pct_votos_validos_sobre_emitidos || 0)], itemStyle: { color: "#22c55e" } },
+          ],
         });
       });
     }
@@ -629,7 +646,7 @@
     }
 
     var chartIdsForPage = {
-      "page-resumen": [],
+      "page-resumen": ["bar-resumen-nacional"],
       "page-pie-emitidos": ["pie-nacional"],
       "page-pie-cruzado": ["pie-cruzado"],
       "page-bar-p1c": ["bar-p1c"],
@@ -654,7 +671,7 @@
     };
 
     var pageInitFns = {
-      "page-resumen": function () {},
+      "page-resumen": initBarResumenNacional,
       "page-pie-emitidos": initPieNacional,
       "page-pie-cruzado": initPieCruzado,
       "page-bar-p1c": initBarP1c,

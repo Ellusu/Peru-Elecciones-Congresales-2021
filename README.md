@@ -10,6 +10,34 @@ Los archivos CSV utilizados en este repositorio provienen de la **Plataforma Nac
 
 Conviene citar esa fuente en cualquier publicación o portal derivado. Los datos son de la **Oficina Nacional de Procesos Electorales (ONPE)** / catálogo de datos abiertos del Estado.
 
+Referencias usadas en este proyecto:
+
+- **Resultados electorales (ONPE, PCM)**: publicados vía portal de datos abiertos del Estado ([datosabiertos.gob.pe](https://www.datosabiertos.gob.pe/)).
+- **Límites departamentales (GeoJSON)**: INEI, distribuido en [juaneladio/peru-geojson](https://github.com/juaneladio/peru-geojson) (archivo `dati/geo/peru_departamentos.geojson`).
+
+## Recupero dati raw (per rigenerare il pipeline)
+
+Per chi clona il repo: la dashboard `dashboard/index.html` funziona anche senza CSV raw, ma per rigenerare SQLite/JSON/HTML servono i file originali ONPE in `dati/`.
+
+File attesi:
+
+- `dati/Resultados_1ra_vuelta_Version_PCM.csv`
+- `dati/Resultados_2da_vuelta*.csv` (il nome può avere suffissi/versioni diverse)
+- `dati/EG2021_Congresal.csv`
+
+Come recuperarli:
+
+1. Vai su [datosabiertos.gob.pe](https://www.datosabiertos.gob.pe/).
+2. Cerca i dataset ONPE delle **Elecciones Generales 2021** (1ª vuelta presidencial, 2ª vuelta presidencial, congresal).
+3. Scarica i CSV e copiali nella cartella `dati/` con i nomi/pattern sopra.
+
+Verifica veloce:
+
+```bash
+ls dati/Resultados_1ra_vuelta_Version_PCM.csv dati/EG2021_Congresal.csv
+ls dati/Resultados_2da_vuelta*.csv
+```
+
 ## Requisitos
 
 - Python 3.9+ (recomendado)
