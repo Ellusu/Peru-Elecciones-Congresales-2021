@@ -72,6 +72,7 @@ Criterio de agregación: actas con `DESCRIP_ESTADO_ACTA = CONTABILIZADA`. Los CS
 
 ## Vista HTML (Apache ECharts)
 
+- Demo online: [https://peru-elecciones-2021.darwixlab.it/#page-home](https://peru-elecciones-2021.darwixlab.it/#page-home)
 - **`dashboard/index.html`**: ábrela con doble clic (datos completos tras `python scripts/build_elecciones_db.py`).
 - **`dashboard/index.template.html`**: misma interfaz con datos demo vacíos; sirve para previsualizar el layout sin CSV ni SQLite.
 

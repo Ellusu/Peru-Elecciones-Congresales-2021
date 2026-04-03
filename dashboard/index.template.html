@@ -10,14 +10,35 @@
     :root { --bg:#0f1419; --panel:#1a2332; --text:#e7ecf3; --muted:#8b9cb3; --accent:#3b82f6; --border:#2d3a4d; --warn:#f59e0b; }
     * { box-sizing: border-box; }
     body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
-    header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); background:var(--panel); }
-    header h1 { margin:0 0 .25rem; font-size:1.25rem; }
+    header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); background:var(--panel); position:relative; z-index:50; }
+    .header-row { display:flex; align-items:flex-start; gap:.75rem; }
+    .header-text { flex:1; min-width:0; max-width:100%; }
+    header h1 { margin:0 0 .25rem; font-size:1.25rem; line-height:1.3; font-weight:600; }
     header p { margin:0; font-size:.85rem; color:var(--muted); }
+    header .header-meta { margin-top:.35rem; }
+    .nav-toggle {
+      display:none; flex-shrink:0; align-items:center; justify-content:center;
+      width:44px; height:44px; margin:0; padding:0; border:1px solid var(--border); border-radius:8px;
+      background:var(--panel); color:var(--text); font-size:1.35rem; line-height:1; font-family:inherit;
+      cursor:pointer;
+    }
+    .nav-toggle:hover { border-color:var(--accent); color:var(--accent); }
     header a { color:var(--accent); }
-    .layout { display:flex; min-height:calc(100vh - 4.5rem); align-items:stretch; }
+    .title-home {
+      display:inline; margin:0; padding:0; border:0; background:transparent; color:inherit;
+      font:inherit; font-size:inherit; font-weight:inherit; font-family:inherit; cursor:pointer;
+      text-align:left; border-radius:4px;
+    }
+    .title-home:hover { color:var(--accent); }
+    .title-home:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .title-home.active { color:var(--accent); }
+    .layout { display:flex; align-items:flex-start; }
+    .main-column {
+      flex:1; min-width:0; display:flex; flex-direction:column; min-height:0;
+    }
     .sidebar {
       width:240px; flex-shrink:0; background:#121a24; border-right:1px solid var(--border);
-      padding:.75rem 0; position:sticky; top:0; align-self:flex-start; max-height:100vh; overflow-y:auto;
+      padding:.75rem 0; position:sticky; top:0; align-self:flex-start;
     }
     .sidebar h3 {
       margin:0 1rem .5rem; font-size:.65rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600;
@@ -30,7 +51,7 @@
     }
     .sidebar button:hover { color:var(--text); background:rgba(255,255,255,.04); }
     .sidebar button.active { color:var(--text); border-left-color:var(--accent); background:rgba(59,130,246,.08); }
-    .main-area { flex:1; min-width:0; padding:1rem 1.25rem 2.5rem; max-width:none; margin:0; }
+    .main-area { flex:1; min-width:0; min-height:0; padding:1rem 1.25rem 1.5rem; max-width:none; margin:0; }
     .banner-demo {
       background:rgba(245,158,11,.12); border:1px solid var(--warn); color:#fcd34d;
       padding:.65rem 1rem; margin:0 1.25rem .75rem; border-radius:8px; font-size:.85rem;
@@ -63,15 +84,78 @@
     table.data tr:hover td { background:rgba(255,255,255,.03); }
     .err { color:#f87171; padding:2rem; text-align:center; }
     .mini { font-size:.7rem; color:var(--muted); margin-top:.35rem; }
+    .site-footer {
+      flex-shrink:0; margin-top:auto; padding:1rem 1.25rem; border-top:1px solid var(--border); background:#121a24;
+      font-size:.75rem; color:var(--muted);
+    }
+    .site-footer a { color:var(--accent); }
+    .home-intro { display:flex; flex-direction:column; gap:1rem; max-width:52rem; }
+    .home-block p { margin:0 0 .75rem; font-size:.9rem; line-height:1.55; color:var(--text); }
+    .home-block p:last-child { margin-bottom:0; }
+    .home-block ul { margin:.35rem 0 .35rem 1.15rem; padding:0; font-size:.88rem; color:var(--muted); line-height:1.5; }
+    .home-block li { margin-bottom:.35rem; }
+    .home-cta-row { margin-top:.25rem; }
+    .home-cta {
+      padding:.55rem 1.15rem; border-radius:8px; border:1px solid var(--accent);
+      background:rgba(59,130,246,.14); color:var(--text); font-size:.9rem; font-family:inherit; cursor:pointer;
+    }
+    .home-cta:hover { background:rgba(59,130,246,.26); }
+    .nav-backdrop {
+      display:none; position:fixed; inset:0; z-index:250; background:rgba(0,0,0,.45);
+      opacity:0; transition:opacity .2s ease; pointer-events:none;
+    }
+    .nav-backdrop.is-open { opacity:1; pointer-events:auto; }
+    body.nav-open { overflow:hidden; overscroll-behavior:none; }
+
+    @media (max-width:768px) {
+      .nav-toggle { display:inline-flex; }
+      .nav-backdrop { display:block; }
+      header { padding:.75rem 1rem; }
+      header h1 { font-size:1.05rem; }
+      header .header-tagline, header .header-meta { font-size:.72rem; line-height:1.45; }
+      .layout { display:block; }
+      .sidebar {
+        position:fixed; left:0; top:0; bottom:0; width:min(300px,88vw); z-index:300;
+        height:100%; max-height:100vh; max-height:100dvh;
+        transform:translateX(-100%); transition:transform .22s ease;
+        overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+        overscroll-behavior:contain; touch-action:pan-y;
+        box-shadow:none; border-right:1px solid var(--border);
+        padding-bottom:env(safe-area-inset-bottom,0);
+      }
+      .sidebar.is-open { transform:translateX(0); box-shadow:8px 0 32px rgba(0,0,0,.45); }
+      .sidebar button { padding:.55rem 1rem; min-height:44px; font-size:.85rem; }
+      .main-area { padding:.75rem 1rem 1rem; }
+      .chart { height:min(55vh,420px); min-height:220px; }
+      .chart.tall, .chart.wide { height:min(58vh,460px); min-height:240px; }
+      .kpis { grid-template-columns:repeat(2,1fr); }
+      .site-footer { padding:.85rem 1rem; font-size:.7rem; }
+      table.data { font-size:.68rem; }
+      .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -.25rem; padding:0 .25rem; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Elecciones generales Perú 2021</h1>
-    <p>Fuente: <a href="https://www.datosabiertos.gob.pe/" target="_blank" rel="noopener">datosabiertos.gob.pe</a> · Apache ECharts + echarts-gl</p>
+    <div class="header-row">
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="sidebarNav" aria-label="Abrir menú">☰</button>
+      <div class="header-text">
+        <h1>
+          <button type="button" class="title-home" data-page="page-home" aria-label="Inicio — Guía">Elecciones generales Perú 2021</button>
+        </h1>
+        <p class="header-tagline">Fuente datos: <a href="https://www.datosabiertos.gob.pe/" target="_blank" rel="noopener">datosabiertos.gob.pe</a> (ONPE).</p>
+        <p class="header-meta">Mapas departamentales (GeoJSON): límites INEI vía <a href="https://github.com/juaneladio/peru-geojson" target="_blank" rel="noopener">juaneladio/peru-geojson</a>.
+        · Visualización: <a href="https://echarts.apache.org/" target="_blank" rel="noopener">Apache ECharts</a> y <a href="https://github.com/ecomfe/echarts-gl" target="_blank" rel="noopener">echarts-gl</a>.</p>
+      </div>
+    </div>
   </header>
+  <div id="nav-backdrop" class="nav-backdrop" aria-hidden="true"></div>
   <div class="layout">
     <aside class="sidebar" id="sidebarNav" aria-label="Navegación">
+      <h3>Inicio</h3>
+      <nav>
+        <button type="button" data-page="page-home">Guía / portada</button>
+      </nav>
       <h3>Resumen</h3>
       <nav>
         <button type="button" data-page="page-resumen">Indicadores nacionales</button>
@@ -118,7 +202,12 @@
     </aside>
     <!-- JSON embebido: en la plantilla hay datos demo válidos; el build los sustituye por datos reales -->
     <script type="application/json" id="bundle">{"demo":true,"geo_peru":null,"nacional_bloques_pres1":{},"nacional_bloques_congreso":{},"mapa_pres1_balance_izq_der":[],"mapa_pres2_pct_castillo":[],"fuente":"https://www.datosabiertos.gob.pe/","resumen":{"nacional":{"presidencial_1v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0},"presidencial_2v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0}}},"voto_cruzado_distrito":{"distritos_total":0,"misma_bancada_1v_congreso":0,"distinto":0,"pct_misma_bancada":0},"departamentos":[],"pres1_candidatos_nacional":[],"pres2_candidatos_nacional":[],"congreso_partidos_nacional":[],"provincias_mayor_electores":[],"distritos_alta_participacion_1v":[],"distritos_baja_participacion_1v":[]}</script>
-    <main class="main-area" id="app"></main>
+    <div class="main-column">
+      <main class="main-area" id="app"></main>
+      <footer class="site-footer">
+        <p><a href="https://www.linkedin.com/in/matteoenna/" target="_blank" rel="noopener">Matteo Enna</a> &amp; <a href="https://mywinerepository.it/tasted-wines/nostrum-reserve/" target="_blank" rel="noopener">Wine</a> created this. &gt; Code, Data &amp; Terroir.</p>
+      </footer>
+    </div>
   </div>
 
   <script>
@@ -174,7 +263,25 @@
     var espectroTxt = (data.espectro_nota || "Ver dati/espectro_politico_2021.json");
     app.innerHTML =
       (demo ? '<p class="banner-demo"><strong>Vista previa / plantilla.</strong> Ejecuta <code>python scripts/build_elecciones_db.py</code> para generar <code>index.html</code> con datos reales (esta plantilla sí se puede abrir en el navegador).</p>' : "") +
-      '<div class="page active" id="page-resumen"><h2 class="page-head">Indicadores nacionales</h2><div class="kpis">' +
+      '<div class="page active" id="page-home"><h2 class="page-head">Guía</h2>' +
+      '<div class="home-intro">' +
+      '<div class="card home-block"><h3>Qué es esta vista</h3>' +
+      '<p>Tablero interactivo para explorar resultados de las <strong>Elecciones Generales de Perú 2021</strong>: primera y segunda vuelta presidencial, y elección congresal. Los datos provienen de la ONPE publicados en la <a href="https://www.datosabiertos.gob.pe/" target="_blank" rel="noopener">plataforma de datos abiertos del Estado</a>.</p>' +
+      "<p>El análisis es <strong>agrupado</strong> (departamento, provincia, distrito, comparaciones ecológicas entre presidencial y congreso, etc.). No refleja votos individuales.</p></div>" +
+      '<div class="card home-block"><h3>Criterio de filtrado</h3>' +
+      '<p>Solo se incluyen mesas con acta <code>CONTABILIZADA</code>. Los porcentajes se calculan sobre emitidos o válidos según indique cada gráfico.</p></div>' +
+      '<div class="card home-block"><h3>Cómo navegar</h3>' +
+      '<p>Usa el <strong>menú lateral</strong>: cada ítem abre una pantalla con un gráfico o una tabla. La URL usa <code>#page-…</code> para enlazar una vista concreta.</p>' +
+      "<p>Pulsa el <strong>título</strong> del encabezado para volver a esta guía.</p></div>" +
+      '<div class="card home-block"><h3>Izquierda / centro / derecha</h3>' +
+      "<p>Los bloques ideológicos son una <strong>clasificación aproximada</strong> (candidatos y listas). Sirven para mapas y barras comparativas; no son etiquetas oficiales.</p></div>" +
+      '<div class="card home-block"><h3>Mapas</h3><ul>' +
+      "<li><strong>Balance (1ª vuelta)</strong>: diferencia entre % válidos a bloques izquierda y derecha por departamento (el centro cuenta en el total pero no en esa diferencia).</li>" +
+      "<li><strong>% Castillo (2ª vuelta)</strong>: sobre votos válidos P1+P2. Escala <strong>rojo → blanco → azul</strong> (≈0% → empate ~50% → ~100%).</li>" +
+      "</ul></div>" +
+      '<p class="home-cta-row"><button type="button" class="home-cta" data-page="page-resumen">Ir a indicadores nacionales →</button></p>' +
+      "</div></div>" +
+      '<div class="page" id="page-resumen"><h2 class="page-head">Indicadores nacionales</h2><div class="kpis">' +
       '<div class="kpi"><span>Participación 1ª vuelta</span><strong>' + n(n1.pct_participacion) + "%</strong></div>" +
       '<div class="kpi"><span>Participación 2ª vuelta</span><strong>' + n(n2.pct_participacion) + "%</strong></div>" +
       '<div class="kpi"><span>Válidos / emitidos (1ª v.)</span><strong>' + n(n1.pct_votos_validos_sobre_emitidos) + "%</strong></div>" +
@@ -196,7 +303,7 @@
       '<div class="card"><h3>% sobre votos válidos</h3><div class="chart" id="bar-bloq-p1"></div></div></div>' +
       '<div class="page" id="page-bar-bloq-cong"><h2 class="page-head">Izq. / centro / der. — Congreso</h2><div class="card"><h3>% sobre votos válidos (lista)</h3><div class="chart" id="bar-bloq-cong"></div></div></div>' +
       '<div class="page" id="page-map-bal"><h2 class="page-head">Mapa — balance (izq. − der.) 1ª vuelta</h2><div class="card"><h3>Por departamento</h3><div class="chart tall" id="map-bal"></div><p class="mini">GeoJSON: INEI/juaneladio/peru-geojson. Rojo = más derecha, azul = más izquierda.</p></div></div>' +
-      '<div class="page" id="page-map-cas"><h2 class="page-head">Mapa — % Castillo (2ª vuelta)</h2><div class="card"><h3>Sobre P1+P2</h3><div class="chart tall" id="map-cas"></div></div></div>' +
+      '<div class="page" id="page-map-cas"><h2 class="page-head">Mapa — % Castillo (2ª vuelta)</h2><div class="card"><h3>Sobre P1+P2</h3><div class="chart tall" id="map-cas"></div><p class="mini">Escala: <strong>rojo</strong> = poco Castillo (≈0%), <strong>blanco</strong> ≈ empate (50%), <strong>azul</strong> = mucho Castillo (≈100%).</p></div></div>' +
 
       '<div class="page" id="page-bar-prov"><h2 class="page-head">Provincias con más electores</h2><div class="card"><h3>1ª vuelta</h3><div class="chart tall" id="bar-prov"></div></div></div>' +
       '<div class="page" id="page-bar-dist-hi"><h2 class="page-head">Distritos — mayor participación (1ª v.)</h2><div class="card"><h3>Ranking</h3><div class="chart" id="bar-dist-hi"></div></div></div>' +
@@ -212,9 +319,9 @@
       '<div class="page" id="page-gl-line3d"><h2 class="page-head">Línea 3D (echarts-gl)</h2><div class="card"><h3>Índice departamento → % part. 1ª → % part. 2ª</h3><div class="chart tall" id="gl-line3d"></div></div></div>' +
 
       '<div class="page" id="page-tabla"><h2 class="page-head">Tabla — departamentos (Perú)</h2>' +
-      '<div class="card"><table class="data" id="tbl-dept"><thead><tr>' +
+      '<div class="card"><div class="table-wrap"><table class="data" id="tbl-dept"><thead><tr>' +
       "<th data-k=\"dep\">Departamento</th><th data-k=\"p1\">Part. 1ª v %</th><th data-k=\"p2\">Part. 2ª v %</th><th data-k=\"d\">Δ part. (pp)</th>" +
-      "<th data-k=\"g1\">Ganador 1ª v</th><th data-k=\"g2\">Ganador 2ª v</th></tr></thead><tbody id=\"tbl-body\"></tbody></table></div></div>" +
+      "<th data-k=\"g1\">Ganador 1ª v</th><th data-k=\"g2\">Ganador 2ª v</th></tr></thead><tbody id=\"tbl-body\"></tbody></table></div></div></div>" +
 
       '<p class="note"><strong>Método:</strong> solo mesas <code>CONTABILIZADA</code>. Voto cruzado = comparación ecológica por distrito. "index.html" generado incluye todos los datos embebidos; esta plantilla incluye JSON demo para previsualizar el layout.</p>';
 
@@ -392,11 +499,19 @@
         ensurePeruMap();
         var map2 = ec("map-cas");
         if (map2 && mapCas.length) map2.setOption({
-          tooltip: { trigger: "item", formatter: "{b}<br/>Castillo: {c}%" },
+          tooltip: {
+            trigger: "item",
+            formatter: function (p) {
+              var v = p.value;
+              if (v == null && p.data) v = p.data.value;
+              return p.name + "<br/>Castillo: " + (v != null ? Number(v).toFixed(1) : "—") + "%<br/><span style=\"opacity:.85;font-size:11px\">50% = empate teórico; menos de 50% tiende a Fujimori; más de 50% tiende a Castillo</span>";
+            },
+          },
           visualMap: {
             min: 0, max: 100, calculable: true,
-            inRange: { color: ["#172554", "#93c5fd", "#fecaca"] },
-            textStyle: { color: "#8b9cb3" },
+            text: ["100% Castillo (azul)", "0% Castillo (rojo)"],
+            textStyle: { color: "#8b9cb3", fontSize: 11 },
+            inRange: { color: ["#b91c1c", "#f8fafc", "#1d4ed8"] },
           },
           series: [{
             type: "map",
@@ -646,6 +761,7 @@
     }
 
     var chartIdsForPage = {
+      "page-home": [],
       "page-resumen": ["bar-resumen-nacional"],
       "page-pie-emitidos": ["pie-nacional"],
       "page-pie-cruzado": ["pie-cruzado"],
@@ -671,6 +787,7 @@
     };
 
     var pageInitFns = {
+      "page-home": function () {},
       "page-resumen": initBarResumenNacional,
       "page-pie-emitidos": initPieNacional,
       "page-pie-cruzado": initPieCruzado,
@@ -703,33 +820,72 @@
       });
     }
 
+    var mqMobile = window.matchMedia("(max-width:768px)");
+    function closeMobileNav() {
+      var side = document.getElementById("sidebarNav");
+      var back = document.getElementById("nav-backdrop");
+      var t = document.getElementById("nav-toggle");
+      document.body.classList.remove("nav-open");
+      if (side) side.classList.remove("is-open");
+      if (back) { back.classList.remove("is-open"); back.setAttribute("aria-hidden", "true"); }
+      if (t) { t.setAttribute("aria-expanded", "false"); t.setAttribute("aria-label", "Abrir menú"); }
+    }
+    function openMobileNav() {
+      var side = document.getElementById("sidebarNav");
+      var back = document.getElementById("nav-backdrop");
+      var t = document.getElementById("nav-toggle");
+      document.body.classList.add("nav-open");
+      if (side) side.classList.add("is-open");
+      if (back) { back.classList.add("is-open"); back.setAttribute("aria-hidden", "false"); }
+      if (t) { t.setAttribute("aria-expanded", "true"); t.setAttribute("aria-label", "Cerrar menú"); }
+    }
+    function toggleMobileNav() {
+      var side = document.getElementById("sidebarNav");
+      if (side && side.classList.contains("is-open")) closeMobileNav();
+      else openMobileNav();
+    }
+
     function showPage(pageId) {
       if (!pageInitFns[pageId]) return;
       document.querySelectorAll("#app .page").forEach(function (p) {
         p.classList.toggle("active", p.id === pageId);
       });
-      document.querySelectorAll("#sidebarNav button[data-page]").forEach(function (b) {
+      document.querySelectorAll("#sidebarNav button[data-page], .title-home").forEach(function (b) {
         b.classList.toggle("active", b.getAttribute("data-page") === pageId);
       });
       pageInitFns[pageId]();
       requestAnimationFrame(function () { resizeChartsForPage(pageId); });
       if (history.replaceState) try { history.replaceState(null, "", "#" + pageId); } catch (e) {}
+      if (mqMobile.matches) closeMobileNav();
     }
 
-    document.querySelectorAll("#sidebarNav button[data-page]").forEach(function (btn) {
+    document.querySelectorAll("#sidebarNav button[data-page], .title-home").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        showPage(btn.getAttribute("data-page"));
+      });
+    });
+    document.querySelectorAll("#app button[data-page]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         showPage(btn.getAttribute("data-page"));
       });
     });
 
-    var hash = (location.hash || "").replace(/^#/, "");
-    if (pageInitFns[hash]) showPage(hash);
-    else showPage("page-resumen");
-
+    var navToggle = document.getElementById("nav-toggle");
+    var navBackdrop = document.getElementById("nav-backdrop");
+    if (navToggle) navToggle.addEventListener("click", function () { toggleMobileNav(); });
+    if (navBackdrop) navBackdrop.addEventListener("click", function () { closeMobileNav(); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMobileNav();
+    });
     window.addEventListener("resize", function () {
+      if (!mqMobile.matches) closeMobileNav();
       var active = document.querySelector("#app .page.active");
       if (active) resizeChartsForPage(active.id);
     });
+
+    var hash = (location.hash || "").replace(/^#/, "");
+    if (pageInitFns[hash]) showPage(hash);
+    else showPage("page-home");
 
     window.addEventListener("hashchange", function () {
       var h = (location.hash || "").replace(/^#/, "");
