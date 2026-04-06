@@ -32,6 +32,11 @@
     .title-home:hover { color:var(--accent); }
     .title-home:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .title-home.active { color:var(--accent); }
+    .scope-control { margin-top:.5rem; display:none; align-items:center; gap:.45rem; font-size:.75rem; color:var(--muted); }
+    .scope-control select {
+      padding:.3rem .55rem; border-radius:8px; background:#121a24; border:1px solid var(--border);
+      color:var(--text); font-size:.8rem; max-width:min(100%,24rem);
+    }
     .layout { display:flex; align-items:flex-start; }
     .main-column {
       flex:1; min-width:0; display:flex; flex-direction:column; min-height:0;
@@ -146,6 +151,10 @@
         <p class="header-tagline">Fuente datos: <a href="https://www.datosabiertos.gob.pe/" target="_blank" rel="noopener">datosabiertos.gob.pe</a> (ONPE).</p>
         <p class="header-meta">Mapas departamentales (GeoJSON): límites INEI vía <a href="https://github.com/juaneladio/peru-geojson" target="_blank" rel="noopener">juaneladio/peru-geojson</a>.
         · Visualización: <a href="https://echarts.apache.org/" target="_blank" rel="noopener">Apache ECharts</a> y <a href="https://github.com/ecomfe/echarts-gl" target="_blank" rel="noopener">echarts-gl</a>.</p>
+        <div class="scope-control" id="global-scope">
+          <label for="sel-scope-global">Ámbito</label>
+          <select id="sel-scope-global" aria-label="Nacional o departamento"></select>
+        </div>
       </div>
     </div>
   </header>
@@ -166,6 +175,7 @@
       <nav>
         <button type="button" data-page="page-bar-p1c">1ª vuelta — candidatos</button>
         <button type="button" data-page="page-bar-p2c">2ª vuelta — candidatos</button>
+        <button type="button" data-page="page-votos-dep">Por departamento (1ª / 2ª)</button>
       </nav>
       <h3>Congreso</h3>
       <nav>
@@ -201,7 +211,7 @@
       </nav>
     </aside>
     <!-- JSON embebido: en la plantilla hay datos demo válidos; el build los sustituye por datos reales -->
-    <script type="application/json" id="bundle">{"demo":true,"geo_peru":null,"nacional_bloques_pres1":{},"nacional_bloques_congreso":{},"mapa_pres1_balance_izq_der":[],"mapa_pres2_pct_castillo":[],"fuente":"https://www.datosabiertos.gob.pe/","resumen":{"nacional":{"presidencial_1v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0},"presidencial_2v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0}}},"voto_cruzado_distrito":{"distritos_total":0,"misma_bancada_1v_congreso":0,"distinto":0,"pct_misma_bancada":0},"departamentos":[],"pres1_candidatos_nacional":[],"pres2_candidatos_nacional":[],"congreso_partidos_nacional":[],"provincias_mayor_electores":[],"distritos_alta_participacion_1v":[],"distritos_baja_participacion_1v":[]}</script>
+    <script type="application/json" id="bundle">{"demo":true,"geo_peru":null,"nacional_bloques_pres1":{},"nacional_bloques_congreso":{},"mapa_pres1_balance_izq_der":[],"mapa_pres2_pct_castillo":[],"fuente":"https://www.datosabiertos.gob.pe/","resumen":{"nacional":{"presidencial_1v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0},"presidencial_2v":{"pct_participacion":0,"pct_votos_validos_sobre_emitidos":0,"pct_votos_blancos_sobre_emitidos":0,"pct_votos_nulos_sobre_emitidos":0,"pct_votos_impugnados_sobre_emitidos":0}}},"voto_cruzado_distrito":{"distritos_total":0,"misma_bancada_1v_congreso":0,"distinto":0,"pct_misma_bancada":0},"departamentos":[],"pres1_candidatos_nacional":[],"pres2_candidatos_nacional":[],"pres1_votos_por_departamento":[],"pres2_votos_por_departamento":[],"congreso_partidos_nacional":[],"provincias_mayor_electores":[],"distritos_alta_participacion_1v":[],"distritos_baja_participacion_1v":[]}</script>
     <div class="main-column">
       <main class="main-area" id="app"></main>
       <footer class="site-footer">
@@ -219,7 +229,7 @@
   function ec(id) {
     var el = document.getElementById(id);
     if (!el) return null;
-    return echarts.init(el);
+    return echarts.getInstanceByDom(el) || echarts.init(el);
   }
   function render(data) {
     var app = document.getElementById("app");
@@ -234,6 +244,16 @@
     var deltas = deps.map(function (d) { return d.delta_participacion_2v_menos_1v != null ? d.delta_participacion_2v_menos_1v : (d.pres2.pct_participacion - d.pres1.pct_participacion); });
     var p1c = data.pres1_candidatos_nacional || [];
     var p2c = data.pres2_candidatos_nacional || [];
+    var p1NatMax = p1c.reduce(function (m, r) { return Math.max(m, Number(r.votos || 0)); }, 0);
+    var p2NatMax = p2c.reduce(function (m, r) { return Math.max(m, Number(r.votos || 0)); }, 0);
+    var p1ByDep = {};
+    var p2ByDep = {};
+    (data.pres1_votos_por_departamento || []).forEach(function (r) {
+      if (!EXTRANJERO.has(r.departamento)) p1ByDep[r.departamento] = r.candidatos;
+    });
+    (data.pres2_votos_por_departamento || []).forEach(function (r) {
+      if (!EXTRANJERO.has(r.departamento)) p2ByDep[r.departamento] = r.candidatos;
+    });
     var cng = data.congreso_partidos_nacional || [];
     var provs = data.provincias_mayor_electores || [];
     var dhi = data.distritos_alta_participacion_1v || [];
@@ -272,6 +292,7 @@
       '<p>Solo se incluyen mesas con acta <code>CONTABILIZADA</code>. Los porcentajes se calculan sobre emitidos o válidos según indique cada gráfico.</p></div>' +
       '<div class="card home-block"><h3>Cómo navegar</h3>' +
       '<p>Usa el <strong>menú lateral</strong>: cada ítem abre una pantalla con un gráfico o una tabla. La URL usa <code>#page-…</code> para enlazar una vista concreta.</p>' +
+      "<p><strong>Presidencial — por departamento</strong>: elige <em>Nacional</em> (totales como las vistas nacionales) o un departamento para ver el mismo desglose filtrado.</p>" +
       "<p>Pulsa el <strong>título</strong> del encabezado para volver a esta guía.</p></div>" +
       '<div class="card home-block"><h3>Izquierda / centro / derecha</h3>' +
       "<p>Los bloques ideológicos son una <strong>clasificación aproximada</strong> (candidatos y listas). Sirven para mapas y barras comparativas; no son etiquetas oficiales.</p></div>" +
@@ -294,6 +315,14 @@
 
       '<div class="page" id="page-bar-p1c"><h2 class="page-head">Presidencial — 1ª vuelta</h2><div class="card"><h3>Todos los candidatos (votos nacionales)</h3><div class="chart tall" id="bar-p1c"></div></div></div>' +
       '<div class="page" id="page-bar-p2c"><h2 class="page-head">Presidencial — 2ª vuelta</h2><div class="card"><h3>Dos candidatos (votos nacionales)</h3><div class="chart" id="bar-p2c"></div></div></div>' +
+      '<div class="page" id="page-votos-dep"><h2 class="page-head">Presidencial — votos por departamento</h2>' +
+      '<p class="mini" style="margin:0 0 .75rem"><strong>Nacional</strong>: mismos totales que las vistas nacionales de candidatos. <strong>Departamento</strong>: votos válidos agregados en ese departamento.</p>' +
+      '<div class="card" style="margin-bottom:.75rem"><label for="sel-votos-dep" style="font-size:.8rem;color:var(--muted)">Ámbito</label> ' +
+      '<select id="sel-votos-dep" aria-label="Nacional o departamento para votos presidenciales" style="margin-left:.5rem;padding:.4rem .65rem;border-radius:8px;background:#121a24;border:1px solid var(--border);color:var(--text);font-size:.85rem;max-width:min(100%,24rem)"></select></div>' +
+      '<div class="grid">' +
+      '<div class="card"><h3>1ª vuelta</h3><div class="chart tall" id="bar-p1c-dep"></div></div>' +
+      '<div class="card"><h3>2ª vuelta</h3><div class="chart" id="bar-p2c-dep"></div></div>' +
+      "</div></div>" +
 
       '<div class="page" id="page-treemap-cong"><h2 class="page-head">Congreso — votos por lista</h2><div class="card"><h3>Principales fuerzas (votos válidos agregados)</h3><div class="chart wide" id="treemap-cong"></div>' +
       '<p class="mini">Suma de votos por partido en todas las mesas; proporcional no implica escaños (D\'Hondt por circunscripción).</p></div></div>' +
@@ -395,27 +424,128 @@
         });
       });
     }
+    var VOTOS_SEL_NACIONAL = "__NACIONAL__";
+    var currentScope = VOTOS_SEL_NACIONAL;
+    function candidatosScope1() {
+      return currentScope === VOTOS_SEL_NACIONAL ? p1c : (p1ByDep[currentScope] || []);
+    }
+    function candidatosScope2() {
+      return currentScope === VOTOS_SEL_NACIONAL ? p2c : (p2ByDep[currentScope] || []);
+    }
+    function drawBarP1cData(rows) {
+      var b1 = ec("bar-p1c");
+      if (!b1 || !rows.length) return;
+      b1.setOption({
+        title: { text: "Ámbito: " + (currentScope === VOTOS_SEL_NACIONAL ? "Nacional" : currentScope), textStyle: { color: "#8b9cb3", fontSize: 11, fontWeight: "normal" }, left: "right", top: 2 },
+        tooltip: { trigger: "axis" },
+        grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
+        xAxis: { type: "value", max: p1NatMax || null, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+        yAxis: { type: "category", data: rows.map(function (r) { return (r.etiqueta || "").slice(0, 42); }).reverse(), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+        series: [{ type: "bar", data: rows.map(function (r) { return r.votos; }).reverse(), itemStyle: { color: "#3b82f6" } }],
+      }, { notMerge: true });
+    }
+    function drawBarP2cData(rows) {
+      var b2 = ec("bar-p2c");
+      if (!b2 || !rows.length) return;
+      b2.setOption({
+        title: { text: "Ámbito: " + (currentScope === VOTOS_SEL_NACIONAL ? "Nacional" : currentScope), textStyle: { color: "#8b9cb3", fontSize: 11, fontWeight: "normal" }, left: "right", top: 2 },
+        tooltip: { trigger: "axis" },
+        xAxis: { type: "category", data: rows.map(function (r) { return (r.etiqueta || "").split(" — ")[0]; }), axisLabel: { color: "#8b9cb3" } },
+        yAxis: { type: "value", max: p2NatMax || null, axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+        series: [{ type: "bar", data: rows.map(function (r) { return r.votos; }), itemStyle: { color: "#22c55e" } }],
+      }, { notMerge: true });
+    }
+    function syncScopeSelectors() {
+      var g = document.getElementById("sel-scope-global");
+      var l = document.getElementById("sel-votos-dep");
+      if (g) g.value = currentScope;
+      if (l) l.value = currentScope;
+    }
+    function refreshScopeDependentCharts() {
+      drawBarP1cData(candidatosScope1());
+      drawBarP2cData(candidatosScope2());
+      paintVotosPorDep(currentScope);
+      requestAnimationFrame(function () {
+        resizeChartsForPage("page-bar-p1c");
+        resizeChartsForPage("page-bar-p2c");
+        resizeChartsForPage("page-votos-dep");
+      });
+    }
+    function buildScopeSelect(sel) {
+      if (!sel) return;
+      var names = Object.keys(p1ByDep).sort(function (a, b) { return a.localeCompare(b, "es"); });
+      if (!names.length) names = depNames.slice();
+      var optEsc = function (s) {
+        return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+      };
+      sel.innerHTML =
+        "<option value=\"" + VOTOS_SEL_NACIONAL + "\">Nacional</option>" +
+        names.map(function (n) { return "<option value=\"" + optEsc(n) + "\">" + optEsc(n) + "</option>"; }).join("");
+      if (currentScope !== VOTOS_SEL_NACIONAL && names.indexOf(currentScope) < 0) currentScope = VOTOS_SEL_NACIONAL;
+      sel.value = currentScope;
+      sel.onchange = function () {
+        currentScope = sel.value || VOTOS_SEL_NACIONAL;
+        syncScopeSelectors();
+        refreshScopeDependentCharts();
+      };
+    }
+    function isScopeFilterablePage(pageId) {
+      return pageId === "page-bar-p1c" || pageId === "page-bar-p2c" || pageId === "page-votos-dep";
+    }
+    function setScopeEnabled(enabled) {
+      var g = document.getElementById("sel-scope-global");
+      if (!g) return;
+      g.disabled = !enabled;
+      g.title = enabled ? "" : "Filtro zona non disponibile in questa pagina";
+    }
     function initBarP1c() {
       onceChart("bar-p1c", function () {
-        var b1 = ec("bar-p1c");
-        if (b1 && p1c.length) b1.setOption({
-          tooltip: { trigger: "axis" },
-          grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
-          xAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
-          yAxis: { type: "category", data: p1c.map(function (r) { return (r.etiqueta || "").slice(0, 42); }).reverse(), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
-          series: [{ type: "bar", data: p1c.map(function (r) { return r.votos; }).reverse(), itemStyle: { color: "#3b82f6" } }],
-        });
+        drawBarP1cData(candidatosScope1());
       });
     }
     function initBarP2c() {
       onceChart("bar-p2c", function () {
-        var b2 = ec("bar-p2c");
-        if (b2 && p2c.length) b2.setOption({
-          tooltip: { trigger: "axis" },
-          xAxis: { type: "category", data: p2c.map(function (r) { return (r.etiqueta || "").split(" — ")[0]; }), axisLabel: { color: "#8b9cb3" } },
-          yAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
-          series: [{ type: "bar", data: p2c.map(function (r) { return r.votos; }), itemStyle: { color: "#22c55e" } }],
-        });
+        drawBarP2cData(candidatosScope2());
+      });
+    }
+    function paintVotosPorDep(depName) {
+      var c1 = depName === VOTOS_SEL_NACIONAL ? p1c : p1ByDep[depName];
+      var c2 = depName === VOTOS_SEL_NACIONAL ? p2c : p2ByDep[depName];
+      var b1 = ec("bar-p1c-dep");
+      var b2 = ec("bar-p2c-dep");
+      if (b1) {
+        if (c1 && c1.length) {
+          b1.setOption({
+            tooltip: { trigger: "axis" },
+            grid: { left: "3%", right: "4%", bottom: "3%", top: "2%", containLabel: true },
+            xAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+            yAxis: { type: "category", data: c1.map(function (r) { return (r.etiqueta || "").slice(0, 42); }).reverse(), axisLabel: { color: "#8b9cb3", fontSize: 9 } },
+            series: [{ type: "bar", data: c1.map(function (r) { return r.votos; }).reverse(), itemStyle: { color: "#3b82f6" } }],
+          }, { notMerge: true });
+        } else {
+          b1.clear();
+        }
+      }
+      if (b2) {
+        if (c2 && c2.length) {
+          b2.setOption({
+            tooltip: { trigger: "axis" },
+            grid: { left: "3%", right: "4%", bottom: "12%", top: "8%", containLabel: true },
+            xAxis: { type: "category", data: c2.map(function (r) { return (r.etiqueta || "").split(" — ")[0]; }), axisLabel: { color: "#8b9cb3" } },
+            yAxis: { type: "value", axisLabel: { color: "#8b9cb3" }, splitLine: { lineStyle: { color: "#2d3a4d" } } },
+            series: [{ type: "bar", data: c2.map(function (r) { return r.votos; }), itemStyle: { color: "#22c55e" } }],
+          }, { notMerge: true });
+        } else {
+          b2.clear();
+        }
+      }
+    }
+    function initVotosPorDep() {
+      onceChart("bar-p1c-dep", function () {
+        var sel = document.getElementById("sel-votos-dep");
+        buildScopeSelect(sel);
+        syncScopeSelectors();
+        paintVotosPorDep(currentScope);
       });
     }
     function initTreemapCong() {
@@ -767,6 +897,7 @@
       "page-pie-cruzado": ["pie-cruzado"],
       "page-bar-p1c": ["bar-p1c"],
       "page-bar-p2c": ["bar-p2c"],
+      "page-votos-dep": ["bar-p1c-dep", "bar-p2c-dep"],
       "page-treemap-cong": ["treemap-cong"],
       "page-bar-bloq-p1": ["bar-bloq-p1"],
       "page-bar-bloq-cong": ["bar-bloq-cong"],
@@ -793,6 +924,7 @@
       "page-pie-cruzado": initPieCruzado,
       "page-bar-p1c": initBarP1c,
       "page-bar-p2c": initBarP2c,
+      "page-votos-dep": initVotosPorDep,
       "page-treemap-cong": initTreemapCong,
       "page-bar-bloq-p1": initBarBloqP1,
       "page-bar-bloq-cong": initBarBloqCong,
@@ -847,6 +979,11 @@
 
     function showPage(pageId) {
       if (!pageInitFns[pageId]) return;
+      if (!isScopeFilterablePage(pageId)) {
+        currentScope = VOTOS_SEL_NACIONAL;
+        syncScopeSelectors();
+      }
+      setScopeEnabled(isScopeFilterablePage(pageId));
       document.querySelectorAll("#app .page").forEach(function (p) {
         p.classList.toggle("active", p.id === pageId);
       });
@@ -869,6 +1006,11 @@
         showPage(btn.getAttribute("data-page"));
       });
     });
+    var scopeWrap = document.getElementById("global-scope");
+    var scopeGlobal = document.getElementById("sel-scope-global");
+    if (scopeWrap) scopeWrap.style.display = "flex";
+    buildScopeSelect(scopeGlobal);
+    syncScopeSelectors();
 
     var navToggle = document.getElementById("nav-toggle");
     var navBackdrop = document.getElementById("nav-backdrop");

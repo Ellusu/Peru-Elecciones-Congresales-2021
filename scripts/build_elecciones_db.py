@@ -520,6 +520,35 @@ def series_mapa_desde_metricas(
     return series
 
 
+def pres_labels_from_dict(d: dict[str, Any], turn: str) -> dict[str, str]:
+    key = "presidencial_1vuelta" if turn == "1v" else "presidencial_2vuelta"
+    return {
+        k: v["nombre"] + " — " + v["partido"]
+        for k, v in d[key]["candidatos"].items()
+    }
+
+
+def pres_votos_por_departamento(
+    df: pd.DataFrame, pcols: list[str], labels: dict[str, str]
+) -> list[dict[str, Any]]:
+    """Suma de votos por candidato agrupada por DEPARTAMENTO (mesas contabilizadas)."""
+    if "DEPARTAMENTO" not in df.columns or not pcols:
+        return []
+    g = df.groupby("DEPARTAMENTO", sort=False)[pcols].sum()
+    rows: list[dict[str, Any]] = []
+    for dep in g.index:
+        tot = {c: int(g.loc[dep, c]) for c in pcols}
+        cand_sorted = sorted(
+            (
+                {"columna": c, "etiqueta": labels.get(c, c), "votos": tot[c]}
+                for c in pcols
+            ),
+            key=lambda x: -x["votos"],
+        )
+        rows.append({"departamento": str(dep), "candidatos": cand_sorted})
+    return sorted(rows, key=lambda x: x["departamento"])
+
+
 def export_dashboard_json(
     db_path: Path,
     out_path: Path,
@@ -529,6 +558,7 @@ def export_dashboard_json(
     cong: pd.DataFrame,
     p1cols: list[str],
     p2cols: list[str],
+    diccionario: dict[str, Any],
 ) -> dict[str, Any]:
     """Genera JSON per la dashboard HTML (Apache ECharts)."""
     conn = sqlite3.connect(db_path)
@@ -630,6 +660,10 @@ def export_dashboard_json(
     bl_pres1_dep = bloques_pres1_por_departamento(pres1, p1cols, esp)
     bl_cast_dep = castillo_por_departamento(pres2)
     bl_cong_dep = bloques_congreso_por_departamento(cong, esp)
+    lbl1 = pres_labels_from_dict(diccionario, "1v")
+    lbl2 = pres_labels_from_dict(diccionario, "2v")
+    pres1_dep_cands = pres_votos_por_departamento(pres1, p1cols, lbl1)
+    pres2_dep_cands = pres_votos_por_departamento(pres2, p2cols, lbl2)
     map_pres1_bal = series_mapa_desde_metricas(
         bl_pres1_dep, "balance_izq_menos_der_pp", geo_peru
     )
@@ -663,6 +697,8 @@ def export_dashboard_json(
         ],
         "pres1_candidatos_nacional": pres1_cand,
         "pres2_candidatos_nacional": pres2_cand,
+        "pres1_votos_por_departamento": pres1_dep_cands,
+        "pres2_votos_por_departamento": pres2_dep_cands,
         "congreso_partidos_nacional": cong_nat,
         "provincias_mayor_electores": provincias,
         "distritos_alta_participacion_1v": dist_hi,
@@ -809,6 +845,7 @@ def main() -> None:
         cong,
         p1cols,
         p2cols,
+        d,
     )
     tpl = BASE / "dashboard" / "index.template.html"
     write_dashboard_html(bundle, tpl, args.dashboard_html)
